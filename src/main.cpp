@@ -10,9 +10,11 @@
 #include <atomic>
 #include <mutex>
 
+const uint UPDATE_FREQ = 200;
+const uint16_t ZERO_MOT_CMD = 1500;
 const uint16_t NUM_MOTORS = 4, MIN_MOT_CMD = 1000, MAX_MOT_CMD = 2000;
 
-std::vector<int> mot_cmds(NUM_MOTORS, 1000);
+std::vector<int> mot_cmds(NUM_MOTORS, ZERO_MOT_CMD);
 
 std::atomic<bool> terminate;
 
@@ -54,7 +56,7 @@ int main(){
 void thread_callback(const int num_mots){
     std::vector<HEAR::ESCMotor*> vec; 
     for(int i=0; i<num_mots; i++){
-        auto mot = new HEAR::ESCMotor(i, 200);
+        auto mot = new HEAR::ESCMotor(i, UPDATE_FREQ);
         vec.push_back(mot);
     }
     while(!terminate){
@@ -63,11 +65,11 @@ void thread_callback(const int num_mots){
             vec[i]->applyCommand(mot_cmds[i]);
             mut.unlock();
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000/UPDATE_FREQ));
     }
 
     for(int i=0; i<num_mots; i++){
-        vec[i]->applyCommand(MIN_MOT_CMD);
+        vec[i]->applyCommand(ZERO_MOT_CMD);
     }
     std::cout << "Stopped all motors" << std::endl; 
 
